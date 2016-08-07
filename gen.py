@@ -55,9 +55,9 @@ frames=[]
 
 p = pyaudio.PyAudio()
 
-CHUNK = 1024
+CHUNK = 10240
 FORMAT = pyaudio.paFloat32
-CHANNELS = 2
+CHANNELS = 1
 RATE = 44100
 WAVE_OUTPUT_FILENAME = "t.wav"
 
