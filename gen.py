@@ -4,6 +4,7 @@ import pyaudio
 import array
 import math
 from time import sleep
+import wave
 
 user_freq = [697.0, 770.0, 852.0, 941.0,
              1209.0, 1336.0, 1477.0, 1633.0]
@@ -47,16 +48,16 @@ op_tones = {
 }
 
 sr = 44100
-length = .25
-volume = .25
+length = 1.0
+volume = .65
+frames=[]
 
 p = pyaudio.PyAudio()
 stream = p.open(rate=sr, channels=1, format=pyaudio.paFloat32, output=True)
 
 tone_set = user_tones
-while True:
-    commands = input('>>>')
-    for command in commands:
+beeps = input('>>>')
+for command in beeps:
         if command is 'U':
             tone_set = user_tones
             continue
@@ -72,10 +73,22 @@ while True:
                 sleep(0.5)    
             continue
 
-        stream.write(array.array('f',
+        data=array.array('f',
                                  ((volume * math.sin(i / (tone[0] / 100.)) + volume * math.sin(i / (tone[1] / 100.)))
-                                  for i in range(int(sr*length)))).tostring())
+                                  for i in range(int(sr*length)))).tostring()
+        stream.write(data)
+        frames.append(data)
 
+print("Replay")
+
+for f in frames:
+    stream.write(f)
+print("Replay Over")
+
+waveFile = wave.open('t.wav', 'wb')
+waveFile.setparams((1, 2, sr, 0, "NONE", "Uncompressed"))
+waveFile.writeframes(b''.join(frames))
+waveFile.close()
 
 stream.close()
 p.terminate()
