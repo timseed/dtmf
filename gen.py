@@ -47,13 +47,27 @@ op_tones = {
     'F': (op_freq[4], op_freq[5]),  # ST
 }
 
-sr = 44100
-length = 1.0
+
+
+length = 0.25
 volume = .65
 frames=[]
 
 p = pyaudio.PyAudio()
-stream = p.open(rate=sr, channels=1, format=pyaudio.paFloat32, output=True)
+
+CHUNK = 1024
+FORMAT = pyaudio.paFloat32
+CHANNELS = 2
+RATE = 44100
+WAVE_OUTPUT_FILENAME = "t.wav"
+
+p = pyaudio.PyAudio()
+
+stream = p.open(format=FORMAT,
+                channels=CHANNELS,
+                rate=RATE,
+                frames_per_buffer=CHUNK,
+                output=True)
 
 tone_set = user_tones
 beeps = input('>>>')
@@ -66,29 +80,32 @@ for command in beeps:
             continue
         try:
             tone = tone_set[command]
+            data=array.array('f',
+                                             ((volume * math.sin(i / (tone[0] / 100.)) + volume * math.sin(i / (tone[1] / 100.)))
+                                              for i in range(int(RATE*length)))).tostring()
         except KeyError:
             if command.upper() is 'Q':
                  break
             if command is  ' ':
-                sleep(0.5)    
-            continue
-
-        data=array.array('f',
-                                 ((volume * math.sin(i / (tone[0] / 100.)) + volume * math.sin(i / (tone[1] / 100.)))
-                                  for i in range(int(sr*length)))).tostring()
+                #Create an Empty Buffer
+                data=array.array('f',   ((0)
+                                  for i in range(int(RATE*length)))).tostring()
+        print("Length of Data is ",len(data))
         stream.write(data)
         frames.append(data)
-
+sleep(2)
 print("Replay")
 
 for f in frames:
     stream.write(f)
 print("Replay Over")
 
-waveFile = wave.open('t.wav', 'wb')
-waveFile.setparams((1, 2, sr, 0, "NONE", "Uncompressed"))
-waveFile.writeframes(b''.join(frames))
-waveFile.close()
+wf = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
+wf.setnchannels(CHANNELS)
+wf.setsampwidth(p.get_sample_size(FORMAT))
+wf.setframerate(RATE)
+wf.writeframes(b''.join(frames))
+wf.close()
 
 stream.close()
 p.terminate()
